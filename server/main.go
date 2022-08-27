@@ -119,6 +119,12 @@ func checkError(err error) {
 }
 
 func main() {
+	if len(os.Args) > 1 && os.Args[1] == "-h" {
+
+	} else {
+		punchHole()
+	}
+
 	rand.Seed(int64(time.Now().Nanosecond()))
 	if VERSION == "SELFBUILD" {
 		// add more log flags for debugging
@@ -132,7 +138,7 @@ func main() {
 	myApp.Flags = []cli.Flag{
 		cli.StringFlag{
 			Name:  "listen,l",
-			Value: ":29900",
+			Value: ":8021",
 			Usage: "kcp server listen address",
 		},
 		cli.StringFlag{

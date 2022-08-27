@@ -79,6 +79,13 @@ type timedSession struct {
 }
 
 func main() {
+	var remoteAddr string
+	if len(os.Args) > 1 && os.Args[1] == "-h" {
+
+	} else {
+		remoteAddr = punchHole()
+	}
+
 	rand.Seed(int64(time.Now().Nanosecond()))
 	if VERSION == "SELFBUILD" {
 		// add more log flags for debugging
@@ -97,7 +104,7 @@ func main() {
 		},
 		cli.StringFlag{
 			Name:  "remoteaddr, r",
-			Value: "vps:29900",
+			Value: remoteAddr,
 			Usage: "kcp server address",
 		},
 		cli.StringFlag{

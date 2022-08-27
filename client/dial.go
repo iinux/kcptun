@@ -1,9 +1,13 @@
 package main
 
 import (
+	"crypto/rand"
+	"encoding/binary"
 	"github.com/pkg/errors"
 	kcp "github.com/xtaci/kcp-go/v5"
 	"github.com/xtaci/tcpraw"
+	"net"
+	_ "unsafe"
 )
 
 func dial(config *Config, block kcp.BlockCrypt) (*kcp.UDPSession, error) {
@@ -14,5 +18,30 @@ func dial(config *Config, block kcp.BlockCrypt) (*kcp.UDPSession, error) {
 		}
 		return kcp.NewConn(config.RemoteAddr, block, config.DataShard, config.ParityShard, conn)
 	}
-	return kcp.DialWithOptions(config.RemoteAddr, block, config.DataShard, config.ParityShard)
+	return DialWithOptions(config.RemoteAddr, block, config.DataShard, config.ParityShard)
+}
+
+//go:linkname newUDPSession github.com/xtaci/kcp-go/v5.newUDPSession
+func newUDPSession(conv uint32, dataShards, parityShards int, l *kcp.Listener, conn net.PacketConn, ownConn bool, remote net.Addr, block kcp.BlockCrypt) *kcp.UDPSession
+
+func DialWithOptions(raddr string, block kcp.BlockCrypt, dataShards, parityShards int) (*kcp.UDPSession, error) {
+	// network type detection
+	udpaddr, err := net.ResolveUDPAddr("udp", raddr)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	network := "udp4"
+	if udpaddr.IP.To4() == nil {
+		network = "udp"
+	}
+
+	laddr := &net.UDPAddr{Port: 8021}
+	conn, err := net.ListenUDP(network, laddr)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	var convid uint32
+	binary.Read(rand.Reader, binary.LittleEndian, &convid)
+	return newUDPSession(convid, dataShards, parityShards, nil, conn, true, udpaddr, block), nil
 }
