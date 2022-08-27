@@ -405,6 +405,7 @@ func main() {
 			smuxConfig.MaxReceiveBuffer = config.SmuxBuf
 			smuxConfig.MaxStreamBuffer = config.StreamBuf
 			smuxConfig.KeepAliveInterval = time.Duration(config.KeepAlive) * time.Second
+			smuxConfig.KeepAliveDisabled = true
 
 			if err := smux.VerifyConfig(smuxConfig); err != nil {
 				log.Fatalf("%+v", err)
@@ -445,6 +446,10 @@ func main() {
 		// start listener
 		numconn := uint16(config.Conn)
 		muxes := make([]timedSession, numconn)
+
+		if remoteAddr != "" {
+			muxes[0].session = waitConn()
+		}
 		rr := uint16(0)
 		for {
 			p1, err := listener.AcceptTCP()

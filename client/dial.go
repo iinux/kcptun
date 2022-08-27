@@ -6,7 +6,9 @@ import (
 	"github.com/pkg/errors"
 	kcp "github.com/xtaci/kcp-go/v5"
 	"github.com/xtaci/tcpraw"
+	"log"
 	"net"
+	"time"
 	_ "unsafe"
 )
 
@@ -37,9 +39,22 @@ func DialWithOptions(raddr string, block kcp.BlockCrypt, dataShards, parityShard
 
 	laddr := &net.UDPAddr{Port: 8021}
 	conn, err := net.ListenUDP(network, laddr)
+	log.Println("new conn", conn)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
+
+	go func() {
+		for true {
+			log.Println("heartbeat", conn)
+			_, err := conn.WriteTo([]byte(""), udpaddr)
+			if err != nil {
+				log.Printf("%+v\n", err)
+				return
+			}
+			time.Sleep(20 * time.Second)
+		}
+	}()
 
 	var convid uint32
 	binary.Read(rand.Reader, binary.LittleEndian, &convid)
